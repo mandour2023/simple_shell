@@ -1,166 +1,168 @@
-#include "custom_shell.h"
+#include "shell.h"
 
 /**
- * buffer_commands - buffers chained commands
- * @data: parameter struct
- * @command_buffer: address of buffer
- * @buffer_length: address of buffer length var
+ * in_buf - buffers chained commands
+ * @inf: parameter struct
+ * @bf: address of buffer
+ * @ln: address of len var
  *
  * Return: bytes read
  */
-ssize_t buffer_commands(custom_data_t *data, char **command_buffer, size_t *buffer_length)
+ssize_t in_buf(info_t *inf, char **bf, size_t *ln)
 {
-	ssize_t bytes_read = 0;
-	size_t buffer_position = 0;
+	ssize_t r = 0;
+	size_t ln_p = 0;
 
-	if (!*buffer_length) /* if nothing left in the buffer, fill it */
+	if (!*ln) /* if nothing left in the buffer, fill it */
 	{
-		free(*command_buffer);
-		*command_buffer = NULL;
-		signal(SIGINT, interruptHandler);
+		/*bfree((void **)inf->cmd_buf);*/
+		free(*bf);
+		*bf = NULL;
+		signal(SIGINT, sigintHandler);
 #if USE_GETLINE
-		bytes_read = getline(command_buffer, buffer_length, stdin);
+		r = getline(bf, &ln_p, stdin);
 #else
-		bytes_read = _custom_getline(data, command_buffer, buffer_length);
+		r = _getline(inf, bf, &ln_p);
 #endif
-		if (bytes_read > 0)
+		if (r > 0)
 		{
-			if ((*command_buffer)[bytes_read - 1] == '\n')
+			if ((*bf)[r - 1] == '\n')
 			{
-				(*command_buffer)[bytes_read - 1] = '\0'; /* remove trailing newline */
-				bytes_read--;
+				(*bf)[r - 1] = '\0'; /* remove trailing newline */
+				r--;
 			}
-			data->linecount_flag = 1;
-			remove_comments(*command_buffer);
-			build_history_list(data, *command_buffer, data->histcount++);
+			inf->linecount_flag = 1;
+			remove_comments(*bf);
+			build_history_list(inf, *bf, inf->histcount++);
+			/* if (_strchr(*bf, ';')) is this a command chain? */
 			{
-				*buffer_length = bytes_read;
-				data->cmd_buf = command_buffer;
+				*ln = r;
+				inf->cmd_buf = bf;
 			}
 		}
 	}
-	return bytes_read;
+	return (r);
 }
 
 /**
- * get_user_input - gets a line minus the newline
- * @data: parameter struct
+ * gt_in - gets a line minus the newline
+ * @inf: parameter struct
  *
  * Return: bytes read
  */
-ssize_t get_user_input(custom_data_t *data)
+ssize_t gt_in(info_t *inf)
 {
-	static char *command_buffer; /* the ';' command chain buffer */
-	static size_t position_i, position_j, buffer_length;
-	ssize_t bytes_read = 0;
-	char **buffer_p = &(data->arg), *p;
+	static char *bf; /* the ';' command chain buffer */
+	static size_t i, j, ln;
+	ssize_t r = 0;
+	char **bf_p = &(inf->arg), *p;
 
 	_putchar(BUF_FLUSH);
-	bytes_read = buffer_commands(data, &command_buffer, &buffer_length);
-	if (bytes_read == -1) /* EOF */
-		return -1;
-	if (buffer_length)	/* we have commands left in the chain buffer */
+	r = in_buf(inf, &bf, &ln);
+	if (r == -1) /* EOF */
+		return (-1);
+	if (ln)	/* we have commands left in the chain buffer */
 	{
-		position_j = position_i; /* init new iterator to current buffer position */
-		p = command_buffer + position_i; /* get pointer for return */
+		j = i; /* init new iterator to current buf position */
+		p = bf + i; /* get pointer for return */
 
-		check_command_chain(data, command_buffer, &position_j, position_i, buffer_length);
-		while (position_j < buffer_length) /* iterate to semicolon or end */
+		check_chain(inf, bf, &j, i, ln);
+		while (j < ln) /* iterate to semicolon or end */
 		{
-			if (is_command_separator(data, command_buffer, &position_j))
+			if (is_chain(inf, bf, &j))
 				break;
-			position_j++;
+			j++;
 		}
 
-		position_i = position_j + 1; /* increment past nulled ';'' */
-		if (position_i >= buffer_length) /* reached end of buffer? */
+		i = j + 1; /* increment past nulled ';'' */
+		if (i >= ln) /* reached end of buffer? */
 		{
-			position_i = buffer_length = 0; /* reset position and length */
-			data->command_buffer_type = CMD_NORM;
+			i = ln = 0; /* reset position and length */
+			inf->cmd_buf_type = CMD_NORM;
 		}
 
-		*buffer_p = p; /* pass back pointer to current command position */
-		return _strlen(p); /* return length of current command */
+		*bf_p = p; /* pass back pointer to current command position */
+		return (_strlen(p)); /* return length of current command */
 	}
 
-	*buffer_p = command_buffer; /* else not a chain, pass back buffer from _custom_getline() */
-	return bytes_read; /* return length of buffer from _custom_getline() */
+	*bf_p = bf; /* else not a chain, pass back buffer from _getline() */
+	return (r); /* return length of buffer from _getline() */
 }
 
 /**
- * read_buffer - reads a buffer
- * @data: parameter struct
- * @buffer: buffer
- * @buffer_size: size
+ * rd_buf - reads a buffer
+ * @inf: parameter struct
+ * @bf: buffer
+ * @i: size
  *
  * Return: r
  */
-ssize_t read_buffer(custom_data_t *data, char *buffer, size_t *buffer_size)
+ssize_t rd_buf(info_t *inf, char *bf, size_t *i)
 {
-	ssize_t bytes_read = 0;
+	ssize_t r = 0;
 
-	if (*buffer_size)
-		return 0;
-	bytes_read = read(data->readfd, buffer, READ_BUFFER_SIZE);
-	if (bytes_read >= 0)
-		*buffer_size = bytes_read;
-	return bytes_read;
+	if (*i)
+		return (0);
+	r = read(inf->readfd, bf, READ_BUF_SIZE);
+	if (r >= 0)
+		*i = r;
+	return (r);
 }
 
 /**
- * _custom_getline - gets the next line of input from STDIN
- * @data: parameter struct
+ * _gtline - gets the next line of input from STDIN
+ * @inf: parameter struct
  * @ptr: address of pointer to buffer, preallocated or NULL
  * @length: size of preallocated ptr buffer if not NULL
  *
  * Return: s
  */
-int _custom_getline(custom_data_t *data, char **ptr, size_t *length)
+int _gtline(info_t *inf, char **ptr, size_t *length)
 {
-	static char buffer[READ_BUFFER_SIZE];
-	static size_t position_i, buffer_length;
+	static char buf[READ_BUF_SIZE];
+	static size_t i, ln;
 	size_t k;
-	ssize_t bytes_read = 0, string_length = 0;
+	ssize_t r = 0, s = 0;
 	char *p = NULL, *new_p = NULL, *c;
 
 	p = *ptr;
 	if (p && length)
-		string_length = *length;
-	if (position_i == buffer_length)
-		position_i = buffer_length = 0;
+		s = *length;
+	if (i == ln)
+		i = ln = 0;
 
-	bytes_read = read_buffer(data, buffer, &buffer_length);
-	if (bytes_read == -1 || (bytes_read == 0 && buffer_length == 0))
-		return -1;
+	r = rd_buf(inf, buf, &ln);
+	if (r == -1 || (r == 0 && ln == 0))
+		return (-1);
 
-	c = _strchr(buffer + position_i, '\n');
-	k = c ? 1 + (unsigned int)(c - buffer) : buffer_length;
-	new_p = _realloc(p, string_length, string_length ? string_length + k : k + 1);
+	c = _strchr(buf + i, '\n');
+	k = c ? 1 + (unsigned int)(c - buf) : ln;
+	new_p = _realloc(p, s, s ? s + k : k + 1);
 	if (!new_p) /* MALLOC FAILURE! */
 		return (p ? free(p), -1 : -1);
 
-	if (string_length)
-		_strncat(new_p, buffer + position_i, k - position_i);
+	if (s)
+		_strncat(new_p, buf + i, k - i);
 	else
-		_strncpy(new_p, buffer + position_i, k - position_i + 1);
+		_strncpy(new_p, buf + i, k - i + 1);
 
-	string_length += k - position_i;
-	position_i = k;
+	s += k - i;
+	i = k;
 	p = new_p;
 
 	if (length)
-		*length = string_length;
+		*length = s;
 	*ptr = p;
-	return string_length;
+	return (s);
 }
 
 /**
- * interruptHandler - blocks ctrl-C
- * @signal_num: the signal number
+ * sintHandler - blocks ctrl-C
+ * @sNum: the signal number
  *
  * Return: void
  */
-void interruptHandler(__attribute__((unused))int signal_num)
+void sintHandler(__attribute__((unused))int sNum)
 {
 	_puts("\n");
 	_puts("$ ");

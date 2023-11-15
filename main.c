@@ -1,44 +1,44 @@
-#include "custom_shell.h"
+#include "shell.h"
 
 /**
- * custom_main - entry point
- * @argc: argument count
- * @argv: argument vector
+ * main - entry point
+ * @ac: arg count
+ * @av: arg vector
  *
  * Return: 0 on success, 1 on error
  */
-int custom_main(int argc, char **argv)
+int main(int ac, char **av)
 {
-    custom_info_t information[] = { CUSTOM_INFO_INIT };
-    int file_descriptor = 2;
+	info_t data[] = { INFO_INIT };
+	int num = 2;
 
-    asm ("mov %1, %0\n\t"
-        "add $3, %0"
-        : "=r" (file_descriptor)
-        : "r" (file_descriptor));
+	asm ("mov %1, %0\n\t"
+		"add $3, %0"
+		: "=r" (num)
+		: "r" (num));
 
-    if (argc == 2)
-    {
-        file_descriptor = open(argv[1], O_RDONLY);
-        if (file_descriptor == -1)
-        {
-            if (errno == EACCES)
-                exit(126);
-            if (errno == ENOENT)
-            {
-                _custom_puts(argv[0]);
-                _custom_puts(": 0: Can't open ");
-                _custom_puts(argv[1]);
-                _custom_putchar('\n');
-                _custom_putchar(CUSTOM_BUF_FLUSH);
-                exit(127);
-            }
-            return (EXIT_FAILURE);
-        }
-        information->read_fd = file_descriptor;
-    }
-    custom_populate_env_list(information);
-    custom_read_history(information);
-    custom_shell(information, argv);
-    return (EXIT_SUCCESS);
+	if (ac == 2)
+	{
+		num = open(av[1], O_RDONLY);
+		if (num == -1)
+		{
+			if (errno == EACCES)
+				exit(126);
+			if (errno == ENOENT)
+			{
+				_eputs(av[0]);
+				_eputs(": 0: Can't open ");
+				_eputs(av[1]);
+				_eputchar('\n');
+				_eputchar(BUF_FLUSH);
+				exit(127);
+			}
+			return (EXIT_FAILURE);
+		}
+		data->readfd = num;
+	}
+	populate_env_list(data);
+	read_history(data);
+	hsh(data, av);
+	return (EXIT_SUCCESS);
 }

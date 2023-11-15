@@ -1,17 +1,18 @@
 #include "shell.h"
+
 /**
- * my_free - Frees a pointer and NULLs the address
- * @ptr_address: Address of the pointer to free
+ * rzero - frees a pointer and NULLs the address
+ * @ptr: address of the pointer to free
  *
  * Return: 1 if freed, otherwise 0.
  */
-int my_free(void **ptr_address)
+int rzero(void **ptr)
 {
-    if (ptr_address && *ptr_address)
-    {
-        free(*ptr_address);
-        *ptr_address = NULL;
-        return 1;
-    }
-    return 0;
+	if (ptr && *ptr)
+	{
+		free(*ptr);
+		*ptr = NULL;
+		return (1);
+	}
+	return (0);
 }

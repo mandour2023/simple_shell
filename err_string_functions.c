@@ -1,20 +1,20 @@
 #include "shell.h"
 
 /**
- * _epstr - prints an input string
- * @s: the string to be printed
+ *_epstr - prints an input string
+ * @str: the string to be printed
  *
  * Return: Nothing
  */
-void _epstr(char *s)
+void _epstr(char *str)
 {
 	int i = 0;
 
-	if (!s)
+	if (!str)
 		return;
-	while (s[i] != '\0')
+	while (str[i] != '\0')
 	{
-		_ech(s[i]);
+		_ech(str[i]);
 		i++;
 	}
 }
@@ -29,15 +29,15 @@ void _epstr(char *s)
 int _ech(char c)
 {
 	static int i;
-	static char b[WRITE_BUF_SIZE];
+	static char buf[WRITE_BUF_SIZE];
 
 	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
 	{
-		write(2, b, i);
+		write(2, buf, i);
 		i = 0;
 	}
 	if (c != BUF_FLUSH)
-		b[i++] = c;
+		buf[i++] = c;
 	return (1);
 }
 
@@ -52,34 +52,34 @@ int _ech(char c)
 int _pfd(char c, int fd)
 {
 	static int i;
-	static char b[WRITE_BUF_SIZE];
+	static char buf[WRITE_BUF_SIZE];
 
 	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
 	{
-		write(fd, b, i);
+		write(fd, buf, i);
 		i = 0;
 	}
 	if (c != BUF_FLUSH)
-		b[i++] = c;
+		buf[i++] = c;
 	return (1);
 }
 
 /**
- * _pstrfd - prints an input string
- * @s: the string to be printed
+ *_pstrfd - prints an input string
+ * @str: the string to be printed
  * @fd: the filedescriptor to write to
  *
  * Return: the number of chars put
  */
-int _pstrfd(char *s, int fd)
+int _pstrfd(char *str, int fd)
 {
 	int i = 0;
 
-	if (!s)
+	if (!str)
 		return (0);
-	while (*s)
+	while (*str)
 	{
-		i += _pfd(*s++, fd);
+		i += _pfd(*str++, fd);
 	}
 	return (i);
 }

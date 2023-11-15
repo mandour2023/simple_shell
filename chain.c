@@ -1,14 +1,14 @@
 #include "shell.h"
 
 /**
- * is_chain - test if current char in buffer is a chain delimeter
- * @inf: the parameter struct
+ * its_chain - test if current char in buffer is a chain delimeter
+ * @info: the parameter struct
  * @buf: the char buffer
  * @p: address of current position in buf
  *
  * Return: 1 if chain delimeter, 0 otherwise
  */
-int is_chain(inf_t *inf, char *buf, size_t *p)
+int its_chain(info_t *info, char *buf, size_t *p)
 {
 	size_t j = *p;
 
@@ -16,18 +16,18 @@ int is_chain(inf_t *inf, char *buf, size_t *p)
 	{
 		buf[j] = 0;
 		j++;
-		inf->c_bt = CMD_OR;
+		info->cmd_buf_type = CMD_OR;
 	}
 	else if (buf[j] == '&' && buf[j + 1] == '&')
 	{
 		buf[j] = 0;
 		j++;
-		inf->c_bt = CMD_AND;
+		info->cmd_buf_type = CMD_AND;
 	}
 	else if (buf[j] == ';') /* found end of this command */
 	{
 		buf[j] = 0; /* replace semicolon with null */
-		inf->c_bt = CMD_CHAIN;
+		info->cmd_buf_type = CMD_CHAIN;
 	}
 	else
 		return (0);
@@ -36,8 +36,8 @@ int is_chain(inf_t *inf, char *buf, size_t *p)
 }
 
 /**
- * check_chain - checks we should continue chaining based on last status
- * @inf: the parameter struct
+ * _check_chain - checks we should continue chaining based on last status
+ * @info: the parameter struct
  * @buf: the char buffer
  * @p: address of current position in buf
  * @i: starting position in buf
@@ -45,21 +45,21 @@ int is_chain(inf_t *inf, char *buf, size_t *p)
  *
  * Return: Void
  */
-void check_chain(inf_t *inf, char *buf, size_t *p, size_t i, size_t len)
+void _check_chain(info_t *info, char *buf, size_t *p, size_t i, size_t len)
 {
 	size_t j = *p;
 
-	if (inf->c_bt == CMD_AND)
+	if (info->cmd_buf_type == CMD_AND)
 	{
-		if (inf->status)
+		if (info->status)
 		{
 			buf[i] = 0;
 			j = len;
 		}
 	}
-	if (inf->c_bt == CMD_OR)
+	if (info->cmd_buf_type == CMD_OR)
 	{
-		if (!inf->status)
+		if (!info->status)
 		{
 			buf[i] = 0;
 			j = len;
@@ -70,12 +70,12 @@ void check_chain(inf_t *inf, char *buf, size_t *p, size_t i, size_t len)
 }
 
 /**
- * replace_alias - replaces an aliases in the tokenized string
- * @inf: the parameter struct
+ * x_replace_alias - replaces an aliases in the tokenized string
+ * @info: the parameter struct
  *
  * Return: 1 if replaced, 0 otherwise
  */
-int replace_alias(inf_t *inf)
+int x_replace_alias(info_t *info)
 {
 	int i;
 	list_t *node;
@@ -83,57 +83,58 @@ int replace_alias(inf_t *inf)
 
 	for (i = 0; i < 10; i++)
 	{
-		node = node_starts_with(inf->alias, inf->argv[0], '=');
+		node = find_node_with(info->alias, info->argv[0], '=');
 		if (!node)
 			return (0);
-		free(inf->argv[0]);
-		p = _strchr(node->str, '=');
+		free(info->argv[0]);
+		p = _strstr(node->str, '=');
 		if (!p)
 			return (0);
-		p = _strdup(p + 1);
+		p = _dupstr(p + 1);
 		if (!p)
 			return (0);
-		inf->argv[0] = p;
+		info->argv[0] = p;
 	}
 	return (1);
 }
 
 /**
  * replace_vars - replaces vars in the tokenized string
- * @inf: the parameter struct
+ * @info: the parameter struct
  *
  * Return: 1 if replaced, 0 otherwise
  */
-int replace_vars(inf_t *inf)
+int replace_vars(info_t *info)
 {
 	int i = 0;
 	list_t *node;
 
-	for (i = 0; inf->argv[i]; i++)
+	for (i = 0; info->argv[i]; i++)
 	{
-		if (inf->argv[i][0] != '$' || !inf->argv[i][1])
+		if (info->argv[i][0] != '$' || !info->argv[i][1])
 			continue;
 
-		if (!_strcmp(inf->argv[i], "$?"))
+		if (!_strcomp(info->argv[i], "$?"))
 		{
-			replace_string(&(inf->argv[i]),
-				_strdup(convert_number(inf->status, 10, 0)));
+			replace_string(&(info->argv[i]),
+				_dupstr(format_num(info->status, 10, 0)));
 			continue;
 		}
-		if (!_strcmp(inf->argv[i], "$$"))
+		if (!_strcomp(info->argv[i], "$$"))
 		{
-			replace_string(&(inf->argv[i]),
-				_strdup(convert_number(getpid(), 10, 0)));
+			replace_string(&(info->argv[i]),
+				_dupstr(format_num(getpid(), 10, 0)));
 			continue;
 		}
-		node = node_starts_with(inf->env, &inf->argv[i][1], '=');
+		node = find_node_with(info->env, &info->argv[i][1], '=');
 		if (node)
 		{
-			replace_string(&(inf->argv[i]),
-				_strdup(_strchr(node->str, '=') + 1));
+			replace_string(&(info->argv[i]),
+				_dupstr(_strstr(node->str, '=') + 1));
 			continue;
 		}
-		replace_string(&inf->argv[i], _strdup(""));
+		replace_string(&info->argv[i], _dupstr(""));
+
 	}
 	return (0);
 }

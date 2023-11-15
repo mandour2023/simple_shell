@@ -1,73 +1,74 @@
-#include "custom_shell.h"
+#include "shell.h"
 
 /**
- * reset_data - initializes custom_data_t struct
- * @data: struct address
+ * clear_info - initializes info_t struct
+ * @info: struct address
  */
-void reset_data(custom_data_t *data)
+void clear_info(info_t *info)
 {
-	data->arg = NULL;
-	data->arg_list = NULL;
-	data->path = NULL;
-	data->arg_count = 0;
+	info->arg = NULL;
+	info->argv = NULL;
+	info->path = NULL;
+	info->argc = 0;
 }
 
 /**
- * initialize_data - initializes custom_data_t struct
- * @data: struct address
- * @arguments: argument vector
+ * set_info - initializes info_t struct
+ * @info: struct address
+ * @av: argument vector
  */
-void initialize_data(custom_data_t *data, char **arguments)
+void set_info(info_t *info, char **av)
 {
 	int i = 0;
 
-	data->program_name = arguments[0];
-	if (data->arg)
+	info->fname = av[0];
+	if (info->arg)
 	{
-		data->arg_list = split_string(data->arg, " \t");
-		if (!data->arg_list)
+		info->argv = strtow(info->arg, " \t");
+		if (!info->argv)
 		{
-			data->arg_list = malloc(sizeof(char *) * 2);
-			if (data->arg_list)
+
+			info->argv = malloc(sizeof(char *) * 2);
+			if (info->argv)
 			{
-				data->arg_list[0] = duplicate_string(data->arg);
-				data->arg_list[1] = NULL;
+				info->argv[0] = _dupstr(info->arg);
+				info->argv[1] = NULL;
 			}
 		}
-		for (i = 0; data->arg_list && data->arg_list[i]; i++)
+		for (i = 0; info->argv && info->argv[i]; i++)
 			;
-		data->arg_count = i;
+		info->argc = i;
 
-		replace_alias(data);
-		replace_variables(data);
+		replace_alias(info);
+		replace_vars(info);
 	}
 }
 
 /**
- * release_data - frees custom_data_t struct fields
- * @data: struct address
+ * free_info - frees info_t struct fields
+ * @info: struct address
  * @all: true if freeing all fields
  */
-void release_data(custom_data_t *data, int all)
+void free_info(info_t *info, int all)
 {
-	free_string_array(data->arg_list);
-	data->arg_list = NULL;
-	data->path = NULL;
+	deallocate(info->argv);
+	info->argv = NULL;
+	info->path = NULL;
 	if (all)
 	{
-		if (!data->command_buffer)
-			free(data->arg);
-		if (data->environment)
-			free_list(&(data->environment));
-		if (data->history)
-			free_list(&(data->history));
-		if (data->alias_list)
-			free_list(&(data->alias_list));
-		free_string_array(data->environment_variables);
-		data->environment_variables = NULL;
-		free_buffer((void **)data->command_buffer);
-		if (data->read_file_descriptor > 2)
-			close(data->read_file_descriptor);
-		print_character(BUFFER_FLUSH);
+		if (!info->cmd_buf)
+			free(info->arg);
+		if (info->env)
+			free_list(&(info->env));
+		if (info->history)
+			free_list(&(info->history));
+		if (info->alias)
+			free_list(&(info->alias));
+		deallocate(info->environ);
+			info->environ = NULL;
+		bfr((void **)info->cmd_buf);
+		if (info->readfd > 2)
+			close(info->readfd);
+		_output(BUF_FLUSH);
 	}
 }

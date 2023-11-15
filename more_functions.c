@@ -1,33 +1,37 @@
 #include "shell.h"
+
 /**
- * checkInteractive - returns true if shell is in interactive mode
- * @infoData: struct address
+ * interface - returns true if shell is interface mode
+ * @info: struct address
  *
- * Return: 1 if in interactive mode, 0 otherwise
+ * Return: 1 if interface mode, 0 otherwise
  */
-int checkInteractive(info_t *infoData)
+int interface(info_t *info)
 {
-	return (isatty(STDIN_FILENO) && infoData->readfd <= 2);
+	return (isatty(STDIN_FILENO) && info->readfd <= 2);
 }
+
 /**
- * isDelimiter - checks if character is a delimiter
- * @c: the character to check
- * @delimiter: the delimiter string
+ * is_sep - checks if character is a delimeter
+ * @c: the char to check
+ * @delim: the delimeter string
  * Return: 1 if true, 0 if false
  */
-int isDelimiter(char c, char *delimiter)
+int is_sep(char c, char *delim)
 {
-	while (*delimiter)
-		if (*delimiter++ == c)
+	while (*delim)
+		if (*delim++ == c)
 			return (1);
 	return (0);
 }
+
 /**
- * isAlphabetic - checks for alphabetic character
- * @c: The character to check
- * Return: 1 if c is alphabetic, 0 otherwise
+ *__isbeta - checks for alphabetic character
+ *@c: The character to input
+ *Return: 1 if c is alphabetic, 0 otherwise
  */
-int isAlphabetic(int c)
+
+int __isbeta(int c)
 {
 	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
 		return (1);
@@ -36,25 +40,26 @@ int isAlphabetic(int c)
 }
 
 /**
- * stringToInteger - converts a string to an integer
- * @str: the string to be converted
- * Return: 0 if no numbers in string, converted number otherwise
+ *_btoi - converts a string to an integer
+ *@s: the string to be converted
+ *Return: 0 if no numbers in string, converted number otherwise
  */
-int stringToInteger(char *str)
+
+int _btoi(char *s)
 {
 	int i, sign = 1, flag = 0, output;
 	unsigned int result = 0;
 
-	for (i = 0; str[i] != '\0' && flag != 2; i++)
+	for (i = 0;  s[i] != '\0' && flag != 2; i++)
 	{
-		if (str[i] == '-')
+		if (s[i] == '-')
 			sign *= -1;
 
-		if (str[i] >= '0' && str[i] <= '9')
+		if (s[i] >= '0' && s[i] <= '9')
 		{
 			flag = 1;
 			result *= 10;
-			result += (str[i] - '0');
+			result += (s[i] - '0');
 		}
 		else if (flag == 1)
 			flag = 2;
@@ -67,4 +72,3 @@ int stringToInteger(char *str)
 
 	return (output);
 }
-

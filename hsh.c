@@ -1,158 +1,160 @@
-#include "custom_shell.h"
+#include "shell.h"
 
 /**
- * custom_shell_loop - main shell loop
- * @data: the parameter & return data struct
- * @arguments: the argument vector from main()
+ * hsh_table - main shell loop
+ * @info: the parameter & return info struct
+ * @av: the argument vector from main()
  *
  * Return: 0 on success, 1 on error, or error code
  */
-int custom_shell_loop(custom_data_t *data, char **arguments)
+int hsh_table(info_t *info, char **av)
 {
-	ssize_t input_length = 0;
-	int builtin_result = 0;
+	ssize_t r = 0;
+	int builtin_ret = 0;
 
-	while (input_length != -1 && builtin_result != -2)
+	while (r != -1 && builtin_ret != -2)
 	{
-		clear_data(data);
-		if (is_interactive(data))
-			_puts("$ ");
-		_eputchar(BUF_FLUSH);
-		input_length = get_user_input(data);
-		if (input_length != -1)
+		reupdate_info(info);
+		if (interface(info))
+			_view("$ ");
+		_ech(BUF_FLUSH);
+		r = retrieve_input(info);
+		if (r != -1)
 		{
-			set_data(data, arguments);
-			builtin_result = find_builtin_command(data);
-			if (builtin_result == -1)
-				find_custom_command(data);
+			update_info(info, av);
+			builtin_ret = search_builtin(info);
+			if (builtin_ret == -1)
+				search_command(info);
 		}
-		else if (is_interactive(data))
-			_putchar('\n');
-		free_data(data, 0);
+		else if (interface(info))
+			_output('\n');
+		release_info(info, 0);
 	}
-	write_history(data);
-	free_data(data, 1);
-	if (!is_interactive(data) && data->status)
-		exit(data->status);
-	if (builtin_result == -2)
+	save_history(info);
+	release_info(info, 1);
+	if (!interface(info) && info->status)
+		exit(info->status);
+	if (builtin_ret == -2)
 	{
-		if (data->error_number == -1)
-			exit(data->status);
-		exit(data->error_number);
+		if (info->err_num == -1)
+			exit(info->status);
+		exit(info->err_num);
 	}
-	return (builtin_result);
+	return (builtin_ret);
 }
 
 /**
- * find_builtin_command - finds a builtin command
- * @data: the parameter & return data struct
+ * search_builtin - finds a builtin command
+ * @info: the parameter & return info struct
  *
  * Return: -1 if builtin not found,
- *         0 if builtin executed successfully,
- *         1 if builtin found but not successful,
- *         -2 if builtin signals exit()
+ *			0 if builtin executed successfully,
+ *			1 if builtin found but not successful,
+ *			-2 if builtin signals exit()
  */
-int find_builtin_command(custom_data_t *data)
+int search_builtin(info_t *info)
 {
-	int i, builtin_result = -1;
-	builtin_table custom_builtins[] = {
-		{"exit", custom_exit},
-		{"env", custom_env},
-		{"help", custom_help},
-		{"history", custom_history},
-		{"setenv", custom_setenv},
-		{"unsetenv", custom_unsetenv},
-		{"cd", custom_cd},
-		{"alias", custom_alias},
+	int i, built_in_ret = -1;
+	builtin_table builtintbl[] = {
+		{"exit", _myexit},
+		{"env", _myenv},
+		{"help", _myhelp},
+		{"history", _myhistory},
+		{"setenv", _mysetenv},
+		{"unsetenv", _myunsetenv},
+		{"cd", _mycd},
+		{"alias", _myalias},
 		{NULL, NULL}
 	};
 
-	for (i = 0; custom_builtins[i].type; i++)
-		if (_strcmp(data->arg[0], custom_builtins[i].type) == 0)
+	for (i = 0; builtintbl[i].type; i++)
+		if (_strcomp(info->argv[0], builtintbl[i].type) == 0)
 		{
-			data->line_count++;
-			builtin_result = custom_builtins[i].function(data);
+			info->line_count++;
+			built_in_ret = builtintbl[i].func(info);
 			break;
 		}
-	return (builtin_result);
+	return (built_in_ret);
 }
 
 /**
- * find_custom_command - finds a command in PATH
- * @data: the parameter & return data struct
+ * search_command - finds a command in PATH
+ * @info: the parameter & return info struct
  *
  * Return: void
  */
-void find_custom_command(custom_data_t *data)
+void search_command(info_t *info)
 {
 	char *path = NULL;
-	int i, argument_count;
+	int i, k;
 
-	data->path = data->arg[0];
-	if (data->line_count_flag == 1)
+	info->path = info->argv[0];
+	if (info->linecount_flag == 1)
 	{
-		data->line_count++;
-		data->line_count_flag = 0;
+		info->line_count++;
+		info->linecount_flag = 0;
 	}
-	for (i = 0, argument_count = 0; data->arguments[i]; i++)
-		if (!is_delimiter(data->arguments[i], " \t\n"))
-			argument_count++;
-	if (!argument_count)
+	for (i = 0, k = 0; info->arg[i]; i++)
+		if (!is_sep(info->arg[i], " \t\n"))
+			k++;
+	if (!k)
 		return;
 
-	path = find_path(data, _getenv(data, "PATH="), data->arg[0]);
+	path = locate_path(info, _getenv(info, "PATH="), info->argv[0]);
 	if (path)
 	{
-		data->path = path;
-		fork_custom_command(data);
+		info->path = path;
+		execute_command(info);
 	}
 	else
 	{
-		if ((is_interactive(data) || _getenv(data, "PATH=")
-			|| data->arg[0][0] == '/') && is_command(data, data->arg[0]))
-			fork_custom_command(data);
-		else if (*(data->arg) != '\n')
+		if ((interface(info) || _getenv(info, "PATH=")
+			|| info->argv[0][0] == '/') && check_cmd(info, info->argv[0]))
+			execute_command(info);
+		else if (*(info->arg) != '\n')
 		{
-			data->status = 127;
-			print_error(data, "not found\n");
+			info->status = 127;
+			display_err(info, "not found\n");
 		}
 	}
 }
 
 /**
- * fork_custom_command - forks an exec thread to run cmd
- * @data: the parameter & return data struct
+ * execute_command - forks a an exec thread to run cmd
+ * @info: the parameter & return info struct
  *
  * Return: void
  */
-void fork_custom_command(custom_data_t *data)
+void execute_command(info_t *info)
 {
 	pid_t child_pid;
 
 	child_pid = fork();
 	if (child_pid == -1)
 	{
+		/* TODO: PUT ERROR FUNCTION */
 		perror("Error:");
 		return;
 	}
 	if (child_pid == 0)
 	{
-		if (execve(data->path, data->arg, get_environment(data)) == -1)
+		if (execve(info->path, info->argv, get_environ(info)) == -1)
 		{
-			free_data(data, 1);
+			release_info(info, 1);
 			if (errno == EACCES)
 				exit(126);
 			exit(1);
 		}
+		/* TODO: PUT ERROR FUNCTION */
 	}
 	else
 	{
-		wait(&(data->status));
-		if (WIFEXITED(data->status))
+		wait(&(info->status));
+		if (WIFEXITED(info->status))
 		{
-			data->status = WEXITSTATUS(data->status);
-			if (data->status == 126)
-				print_error(data, "Permission denied\n");
+			info->status = WEXITSTATUS(info->status);
+			if (info->status == 126)
+				display_err(info, "Permission denied\n");
 		}
 	}
 }

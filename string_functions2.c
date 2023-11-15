@@ -1,34 +1,34 @@
 #include "shell.h"
 
 /**
- * _strcp - copies a string
- * @dst: the destination
+ * _cpystr - copies a string
+ * @dest: the destination
  * @src: the source
  *
  * Return: pointer to destination
  */
-char *_strcp(char *dst, char *src)
+char *_cpystr(char *dest, char *src)
 {
 	int i = 0;
 
-	if (dst == src || src == 0)
-		return (dst);
+	if (dest == src || src == 0)
+		return (dest);
 	while (src[i])
 	{
-		dst[i] = src[i];
+		dest[i] = src[i];
 		i++;
 	}
-	dst[i] = 0;
-	return (dst);
+	dest[i] = 0;
+	return (dest);
 }
 
 /**
- * _strdu - duplicates a string
+ * _dupstr - duplicates a string
  * @str: the string to duplicate
  *
  * Return: pointer to the duplicated string
  */
-char *_strdu(const char *str)
+char *_dupstr(const char *str)
 {
 	int length = 0;
 	char *ret;
@@ -46,12 +46,12 @@ char *_strdu(const char *str)
 }
 
 /**
- *_putz - prints an input string
+ *_view - prints an input string
  *@str: the string to be printed
  *
  * Return: Nothing
  */
-void _putz(char *str)
+void _view(char *str)
 {
 	int i = 0;
 
@@ -59,19 +59,19 @@ void _putz(char *str)
 		return;
 	while (str[i] != '\0')
 	{
-		_putchar(str[i]);
+		_output(str[i]);
 		i++;
 	}
 }
 
 /**
- * _putch - writes the character c to stdout
+ * _output - writes the character c to stdout
  * @c: The character to print
  *
  * Return: On success 1.
  * On error, -1 is returned, and errno is set appropriately.
  */
-int _putch(char c)
+int _output(char c)
 {
 	static int i;
 	static char buf[WRITE_BUF_SIZE];

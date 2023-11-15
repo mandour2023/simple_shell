@@ -56,7 +56,6 @@ int set_alias_custom(custom_data_t *data, char *str)
 	remove_alias(data, str);
 	return (add_node_end(&(data->alias_list), str, 0) == NULL);
 }
-
 /**
  * display_alias - prints an alias string
  * @node: the alias node
@@ -66,7 +65,6 @@ int set_alias_custom(custom_data_t *data, char *str)
 int display_alias(list_t *node)
 {
 	char *p = NULL, *a = NULL;
-
 	if (node)
 	{
 		p = _strchr(node->str, '=');
@@ -79,7 +77,6 @@ int display_alias(list_t *node)
 	}
 	return (1);
 }
-
 /**
  * custom_alias - mimics the alias builtin (man alias)
  * @data: Structure containing potential arguments. Used to maintain

@@ -1,97 +1,97 @@
-#include "custom_shell.h"
+#include "shell.h"
 
 /**
- * custom_exit - exits the shell
- * @data: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- *  Return: exits with a given exit status
- *         (0) if data.arg_list[0] != "exit"
+ * _xexit - exits the shell
+ * @i: Structure containing potential arguments. Used to maintain
+ *      constant function prototype.
+ * Return: exits with a given exit status
+ *         (0) if i->args[0] != "exit"
  */
-int custom_exit(custom_data_t *data)
+int _xexit(info_t *i)
 {
-	int exit_check;
+	int xcheck;
 
-	if (data->arg_list[1])  /* If there is an exit argument */
+	if (i->args[1])  /* If there is an exit argument */
 	{
-		exit_check = custom_atoi(data->arg_list[1]);
-		if (exit_check == -1)
+		xcheck = _erratoi(i->args[1]);
+		if (xcheck == -1)
 		{
-			data->status = 2;
-			print_error(data, "Illegal number: ");
-			_eputs(data->arg_list[1]);
+			i->status = 2;
+			print_error(i, "Illegal number: ");
+			_eputs(i->args[1]);
 			_eputchar('\n');
 			return (1);
 		}
-		data->error_number = custom_atoi(data->arg_list[1]);
+		i->err_num = _erratoi(i->args[1]);
 		return (-2);
 	}
-	data->error_number = -1;
+	i->err_num = -1;
 	return (-2);
 }
 
 /**
- * custom_change_directory - changes the current directory of the process
- * @data: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- *  Return: Always 0
+ * _xcd - changes the current directory of the process
+ * @i: Structure containing potential arguments. Used to maintain
+ *      constant function prototype.
+ * Return: Always 0
  */
-int custom_change_directory(custom_data_t *data)
+int _xcd(info_t *i)
 {
-	char *current_dir, *directory, buffer[1024];
-	int chdir_result;
+	char *s, *dir, buffer[1024];
+	int r;
 
-	current_dir = getcwd(buffer, 1024);
-	if (!current_dir)
+	s = getcwd(buffer, 1024);
+	if (!s)
 		_puts("TODO: >>getcwd failure emsg here<<\n");
-	if (!data->arg_list[1])
+	if (!i->args[1])
 	{
-		directory = _getenv(data, "HOME=");
-		if (!directory)
-			chdir_result = /* TODO: what should this be? */
-				chdir((directory = _getenv(data, "PWD=")) ? directory : "/");
+		dir = _getenv(i, "HOME=");
+		if (!dir)
+			r = /* TODO: what should this be? */
+				chdir((dir = _getenv(i, "PWD=")) ? dir : "/");
 		else
-			chdir_result = chdir(directory);
+			r = chdir(dir);
 	}
-	else if (_strcmp(data->arg_list[1], "-") == 0)
+	else if (_strcmp(i->args[1], "-") == 0)
 	{
-		if (!_getenv(data, "OLDPWD="))
+		if (!_getenv(i, "OLDPWD="))
 		{
-			_puts(current_dir);
+			_puts(s);
 			_putchar('\n');
 			return (1);
 		}
-		_puts(_getenv(data, "OLDPWD=")), _putchar('\n');
-		chdir_result = /* TODO: what should this be? */
-			chdir((directory = _getenv(data, "OLDPWD=")) ? directory : "/");
+		_puts(_getenv(i, "OLDPWD=")), _putchar('\n');
+		r = /* TODO: what should this be? */
+			chdir((dir = _getenv(i, "OLDPWD=")) ? dir : "/");
 	}
 	else
-		chdir_result = chdir(data->arg_list[1]);
-	if (chdir_result == -1)
+		r = chdir(i->args[1]);
+	if (r == -1)
 	{
-		print_error(data, "can't cd to ");
-		_eputs(data->arg_list[1]), _eputchar('\n');
+		print_error(i, "can't cd to ");
+		_eputs(i->args[1]), _eputchar('\n');
 	}
 	else
 	{
-		_setenv(data, "OLDPWD", _getenv(data, "PWD="));
-		_setenv(data, "PWD", getcwd(buffer, 1024));
+		_setenv(i, "OLDPWD", _getenv(i, "PWD="));
+		_setenv(i, "PWD", getcwd(buffer, 1024));
 	}
 	return (0);
 }
 
 /**
- * custom_help - displays help information
- * @data: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- *  Return: Always 0
+ * _xhelp - changes the current directory of the process
+ * @i: Structure containing potential arguments. Used to maintain
+ *      constant function prototype.
+ * Return: Always 0
  */
-int custom_help(custom_data_t *data)
+int _xhelp(info_t *i)
 {
-	char **arg_array;
+	char **a_array;
 
-	arg_array = data->arg_list;
+	a_array = i->args;
 	_puts("help call works. Function not yet implemented \n");
 	if (0)
-		_puts(*arg_array); /* temp att_unused workaround */
+		_puts(*a_array); /* temp att_unused workaround */
 	return (0);
 }
